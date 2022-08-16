@@ -1,0 +1,32 @@
+name: ArchitecturePractice
+options:
+    bundleIdPrefix: Toshiki-Yanagimoto.ArchitecturePractice
+targets:
+  ArchitecturePractice:
+    type: application
+    platform: iOS
+    deploymentTarget: "14.0"
+    sources: ArchitecturePractice
+    schemes:
+        ArchitecturePractice:
+        testTargetName: ArchitecturePracticeTests
+    preBuildScripts:
+      - path: ./Scripts/before-compile.sh
+        name: before-compile
+        shell: "/bin/bash"
+
+  ArchitecturePracticeTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "14.0"
+    sources: ArchitecturePracticeTests
+    dependencies:
+      - target: ArchitecturePractice
+
+  ArchitecturePracticeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "14.0"
+    sources: ArchitecturePracticeUITests
+    dependencies:
+      - target: ArchitecturePractice
