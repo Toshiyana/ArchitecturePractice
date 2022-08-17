@@ -1,13 +1,13 @@
 # Lint対象に追加するパス
 included:
-- iOSEngineerCodeCheck
+- ArchitecturePractice
 
 # Lint対象から除外するパス
 excluded:
 - Carthage
 - Pods
-- iOSEngineerCodeCheckTests
-- iOSEngineerCodeCheckUITests
+- ArchitecturePracticeTests
+- ArchitecturePracticeUITests
 
 # 基本的に全てのオプトインルールを有効化した上で、無効にしたいもののみdisabled_rulesに欄に記載し、無効化。
 
