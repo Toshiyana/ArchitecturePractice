@@ -1,11 +1,11 @@
 # OS X Finder
 .DS_Store
 
-## Build generated
+# Build generated
 build/
 DerivedData
 
-## Various settings
+# Private Xcode settings (window size, bookmarks, breakpoints, etc.)
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -15,24 +15,35 @@ DerivedData
 *.perspectivev3
 !default.perspectivev3
 
-## Other
+
+# Other
+## Problems arise when VCS metadata is included and committed, making it difficult to merge.
 *.xccheckout
+
+## Files for manually deprecated classes are moved here (e.g., when you try to define a class with the same name).
+## http://stackoverflow.com/questions/1153211/whats-that-classes-1-moved-aside-directory-in-my-classes-directory
 *.moved-aside
+
+## This is edited every time Xcode is launched. (UserInterfaceState.xcuserstate, etc.)
 *.xcuserstate
+
 *.xcscmblueprint
 *.swp
 !.gitkeep
 
-## Obj-C/Swift specific
+# Obj-C/Swift specific
 *.hmap
 *.ipa
 
 # CocoaPods
 Pods/
 
+# Build custom scheme (Location, etc.)
+xcuserdata
+
+
 # Xcode project files except for the project file
 *.xcodeproj/project.pbxproj
 *.xcodeproj
 *.xcworkspace
-xcuserdata
 *xcuserdata/
