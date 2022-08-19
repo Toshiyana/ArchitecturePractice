@@ -10,7 +10,11 @@ import UIKit
 class ListViewController: UIViewController {
     @IBOutlet private weak var tableView: UITableView!
 
+    let data = ["1", "2", "3"]
+
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        tableView.register(ListCell.self)
     }
 }
