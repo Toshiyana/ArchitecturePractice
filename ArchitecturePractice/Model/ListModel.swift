@@ -6,6 +6,7 @@
 //
 
 import FirebaseFirestore
+import FirebaseAuth
 
 struct List {
     var content: String
@@ -33,7 +34,11 @@ class ListModel {
     weak var delegate: ListModelDelegate?
 
     func read() {
-        self.listener = db.collection("posts").order(by: "timestamp")
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+
+        self.listener = db.collection("posts")
+            .whereField("uid", isEqualTo: uid)
+            //            .order(by: "timestamp") // whereFieldは同じtimestampじゃないと機能しない
             .addSnapshotListener(includeMetadataChanges: true, listener: { [unowned self] snapshot, error in
                 guard let snap = snapshot else {
                     print("Error fetching document: \(error!)")

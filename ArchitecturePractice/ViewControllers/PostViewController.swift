@@ -41,7 +41,7 @@ class PostViewController: UIViewController {
     }
 
     // MARK: - Actions
-    @IBAction private func postButtonTapped() {
+    @IBAction private func postButtonPressed() {
         guard let content = textField.text else { return }
         postModel.post(with: content)
     }

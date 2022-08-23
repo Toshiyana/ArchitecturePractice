@@ -10,7 +10,6 @@ import FirebaseFirestore
 
 struct Post {
     var id: String
-    //    var user: String
     var content: String
 }
 
@@ -45,15 +44,15 @@ class PostModel {
                     self.delegate?.didPost()
                 }
         } else {
-            //            guard let uid = Auth.auth().currentUser?.uid else {
-            //                print("DEBUG: Current user isn't exist.")
-            //                return
-            //            }
+            guard let uid = Auth.auth().currentUser?.uid else {
+                print("DEBUG: Current user isn't exist.")
+                return
+            }
 
             // idは勝手に割り振られる
             db.collection("posts")
                 .addDocument(data: [
-                    //                    "user": uid,
+                    "uid": uid,
                     "content": content,
                     "timestamp": Timestamp(date: Date())
                 ]) { [unowned self] error in

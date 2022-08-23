@@ -12,12 +12,14 @@ class ListViewController: UIViewController {
     @IBOutlet private weak var addButton: UIBarButtonItem!
 
     private let listModel = ListModel()
+    private let authModel = AuthModel()
 
     // MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupModel()
         setupTableView()
+        navigationItem.setHidesBackButton(true, animated: true)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -56,8 +58,12 @@ class ListViewController: UIViewController {
     }
 
     // MARK: - Actions
-    @IBAction private func addButtonTapped() {
+    @IBAction private func addButtonPressed() {
         goToPost()
+    }
+
+    @IBAction private func logoutButtonPressed() {
+        // TODO:
     }
 }
 
