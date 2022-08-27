@@ -11,13 +11,10 @@ class LoginViewController: UIViewController {
     @IBOutlet private weak var emailTextField: UITextField!
     @IBOutlet private weak var passwordTextField: UITextField!
 
-    private let authModel = AuthModel()
-
     // MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        authModel.delegate = self
         setupUI()
     }
 
@@ -34,23 +31,28 @@ class LoginViewController: UIViewController {
               let password = passwordTextField.text else {
             return
         }
-        authModel.login(with: email, and: password)
+        AuthModel.login(with: email, and: password) { [weak self] _, error in
+            if let error = error {
+                print(error.localizedDescription)
+                self?.showAlertView(withTitle: "ログインエラー", andMessage: "ログインできませんでした。")
+                return
+            }
+
+            self?.goToList()
+        }
+    }
+
+    @IBAction private func signupButtonPressed() {
+        let signupVC = UIStoryboard(name: "SignupViewController", bundle: nil).instantiateInitialViewController() as! SignupViewController
+        guard let nav = navigationController else {
+            fatalError("NavigationController doesn't exist.")
+        }
+        nav.pushViewController(signupVC, animated: true)
     }
 
     // MARK: - Segue
     private func goToList() {
-        performSegue(withIdentifier: "goToList", sender: self)
-    }
-}
-
-extension LoginViewController: AuthModelDelegate {
-    func didLogin() {
-        goToList()
-    }
-
-    func errorDidOccur(error: Error) {
-        print("Login error: \(error.localizedDescription)")
-        showAlertView(withTitle: "ログインエラー", andMessage: "ログインできませんでした。")
+        dismiss(animated: true)
     }
 }
 

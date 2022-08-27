@@ -7,58 +7,28 @@
 
 import FirebaseAuth
 
-@objc protocol AuthModelDelegate: AnyObject {
-    @objc optional func didLogin()
-    @objc optional func didLogout()
-    @objc optional func emailVerificationDidSend()
-    func errorDidOccur(error: Error)
-}
+typealias FirestoreCompletion = ((AuthDataResult?, Error?) -> Void)
 
+// escapingを使う必要ない気がする。escapingを使うとclosureを保持するためにメモリを消費するので、パフォーマンスの観点から不要な場合はつけない方がよいっぽい
 class AuthModel {
-    weak var delegate: AuthModelDelegate?
-
-    var isUserVerified: Bool {
-        return (Auth.auth().currentUser == nil) ? false : true
+    static var isUserVerified: Bool {
+        return (Auth.auth().currentUser != nil) ? true : false
     }
 
-    func signup(with email: String, and password: String) {
-        Auth.auth().createUser(withEmail: email, password: password) { result, error in
-            if let error = error {
-                self.delegate?.errorDidOccur(error: error)
-                return
-            }
-            guard let user = result?.user else { return }
-            // check registering new user in firebase db
-            self.sendEmailVerification(to: user)
-        }
+    static func signup(with email: String, and password: String, completion: @escaping(FirestoreCompletion)) {
+        Auth.auth().createUser(withEmail: email, password: password, completion: completion)
     }
 
-    func login(with email: String, and password: String) {
-        Auth.auth().signIn(withEmail: email, password: password) { [unowned self] (_, error) in
-            if let error = error {
-                self.delegate?.errorDidOccur(error: error)
-            }
-            self.delegate?.didLogin?()
-        }
+    static func login(with email: String, and password: String, completion: @escaping(FirestoreCompletion)) {
+        Auth.auth().signIn(withEmail: email, password: password, completion: completion)
     }
 
-    func logout() {
+    static func logout(completion: @escaping(Error?) -> Void) {
         do {
             try Auth.auth().signOut()
-            delegate?.didLogin?()
+            completion(nil)
         } catch {
-            print("Failed to log out. \(error.localizedDescription)")
-            delegate?.errorDidOccur(error: error)
-        }
-    }
-
-    private func sendEmailVerification(to user: User) {
-        user.sendEmailVerification { [unowned self] error in
-            if let error = error {
-                self.delegate?.errorDidOccur(error: error)
-                return
-            }
-            self.delegate?.emailVerificationDidSend?()
+            completion(error)
         }
     }
 }

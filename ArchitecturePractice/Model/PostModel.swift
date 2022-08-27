@@ -13,16 +13,9 @@ struct Post {
     var content: String
 }
 
-protocol PostModelDelegate: AnyObject {
-    func didPost()
-    func errorDidOccur(error: Error)
-}
-
 class PostModel {
     private let db: Firestore
     let selectedPost: Post?
-
-    weak var delegate: PostModelDelegate?
 
     init(with selectedPost: Post? = nil) {
         self.selectedPost = selectedPost
@@ -30,38 +23,28 @@ class PostModel {
         db.settings.isPersistenceEnabled = true // オフラインの永続性を有効化（default）
     }
 
-    func post(with content: String) {
+    func addNewPost(with content: String, completion: @escaping(Error?) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("DEBUG: Current user isn't exist.")
+            return
+        }
+
+        // idは勝手に割り振られる
+        db.collection("posts")
+            .addDocument(data: [
+                "uid": uid,
+                "content": content,
+                "timestamp": Timestamp(date: Date())
+            ], completion: completion)
+    }
+
+    func updatePost(with content: String, completion: @escaping(Error?) -> Void) {
         if let post = selectedPost {
             db.collection("posts").document(post.id)
                 .updateData([
                     "content": content,
                     "timestamp": Timestamp(date: Date())
-                ]) { [unowned self] error in
-                    if let error = error {
-                        self.delegate?.errorDidOccur(error: error)
-                        return
-                    }
-                    self.delegate?.didPost()
-                }
-        } else {
-            guard let uid = Auth.auth().currentUser?.uid else {
-                print("DEBUG: Current user isn't exist.")
-                return
-            }
-
-            // idは勝手に割り振られる
-            db.collection("posts")
-                .addDocument(data: [
-                    "uid": uid,
-                    "content": content,
-                    "timestamp": Timestamp(date: Date())
-                ]) { [unowned self] error in
-                    if let error = error {
-                        self.delegate?.errorDidOccur(error: error)
-                        return
-                    }
-                    self.delegate?.didPost()
-                }
+                ], completion: completion)
         }
     }
 }

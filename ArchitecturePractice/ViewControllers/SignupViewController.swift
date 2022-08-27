@@ -11,20 +11,11 @@ class SignupViewController: UIViewController {
     @IBOutlet private weak var emailTextField: UITextField!
     @IBOutlet private weak var passwordTextField: UITextField!
 
-    private let authModel = AuthModel()
-
     // MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        authModel.delegate = self
         setupUI()
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-
-        //        if authModel.isUserVerified { goToList() }
     }
 
     // MARK: - Helpers
@@ -40,7 +31,15 @@ class SignupViewController: UIViewController {
               let password = passwordTextField.text else {
             return
         }
-        authModel.signup(with: email, and: password)
+        AuthModel.signup(with: email, and: password) { [weak self] _, error in
+            if let error = error {
+                print(error.localizedDescription)
+                self?.showAlertView(withTitle: "サインアップエラー", andMessage: "サインアップできませんでした。")
+                return
+            }
+
+            self?.goToLogin()
+        }
     }
 
     @IBAction private func loginButtonPressed() {
@@ -49,23 +48,15 @@ class SignupViewController: UIViewController {
 
     // MARK: - Segue
     private func goToLogin() {
-        performSegue(withIdentifier: "goToLogin", sender: self)
+        navigationController?.popViewController(animated: true)
     }
 
     private func goToList() {
-        performSegue(withIdentifier: "goToList", sender: self)
-    }
-}
-
-extension SignupViewController: AuthModelDelegate {
-    func emailVerificationDidSend() {
-        // After checking a user is registered, segue to login
-        goToLogin()
-    }
-
-    func errorDidOccur(error: Error) {
-        print(error.localizedDescription)
-        showAlertView(withTitle: "サインアップエラー", andMessage: "サインアップできませんでした。")
+        let listVC = UIStoryboard(name: "ListViewController", bundle: nil).instantiateInitialViewController() as! ListViewController
+        guard let nav = navigationController else {
+            fatalError("NavigationController doesn't exist.")
+        }
+        nav.pushViewController(listVC, animated: true)
     }
 }
 

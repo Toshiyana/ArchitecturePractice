@@ -18,11 +18,6 @@ struct List {
     }
 }
 
-protocol ListModelDelegate: AnyObject {
-    func listDidChnage()
-    func errorDidOccur(error: Error)
-}
-
 class ListModel {
     private let db: Firestore = Firestore.firestore()
 
@@ -31,37 +26,40 @@ class ListModel {
 
     private var listener: ListenerRegistration?
 
-    weak var delegate: ListModelDelegate?
-
-    func read() {
+    func read(completion: @escaping(Error?) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
         self.listener = db.collection("posts")
             .whereField("uid", isEqualTo: uid)
             //            .order(by: "timestamp") // whereFieldは同じtimestampじゃないと機能しない
-            .addSnapshotListener(includeMetadataChanges: true, listener: { [unowned self] snapshot, error in
+            .addSnapshotListener(includeMetadataChanges: true, listener: { [weak self] snapshot, error in
                 guard let snap = snapshot else {
-                    print("Error fetching document: \(error!)")
-                    self.delegate?.errorDidOccur(error: error!)
+                    print("DEBUG: Error fetching document:: \(error!)")
+                    completion(error)
                     return
                 }
 
                 for diff in snap.documentChanges {
                     if diff.type == .added {
-                        print("New data: \(diff.document.data())")
+                        print("DEBUG: New data:: \(diff.document.data())")
                     }
                 }
-                print("Current data: \(snap)")
-                self.reload(with: snap)
+                self?.reload(with: snap)
+                completion(nil)
             })
     }
 
-    func delete(at index: Int) {
+    func delete(at index: Int, completion: @escaping(Error?) -> Void) {
         db.collection("posts")
             .document(snapList[index].documentID)
-            .delete()
-
-        snapList.remove(at: index)
+            .delete { [weak self] error in
+                if let error = error {
+                    completion(error)
+                } else {
+                    self?.snapList.remove(at: index) // TODO: Index out of rangeのエラー出た
+                    completion(nil)
+                }
+            }
     }
 
     private func reload(with snap: QuerySnapshot) {
@@ -70,7 +68,6 @@ class ListModel {
             for item in snap.documents {
                 snapList.append(item)
             }
-            delegate?.listDidChnage()
         }
     }
 }

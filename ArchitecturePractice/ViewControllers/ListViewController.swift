@@ -11,12 +11,13 @@ class ListViewController: UIViewController {
     @IBOutlet private weak var tableView: UITableView!
     @IBOutlet private weak var addButton: UIBarButtonItem!
 
-    private let listModel = ListModel()
-    private let authModel = AuthModel()
+    private var listModel: ListModel?
 
     // MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        if !AuthModel.isUserVerified { goToLogin() }
         setupModel()
         setupTableView()
         navigationItem.setHidesBackButton(true, animated: true)
@@ -24,13 +25,26 @@ class ListViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        listModel.selectedSnapshot = nil
+        if listModel == nil {
+            // After Logout, Login
+            setupModel()
+        } else {
+            // After Posting (login status, listModel != nil)
+            listModel?.selectedSnapshot = nil // これが実行されていない
+        }
     }
 
     // MARK: - Helpers
     private func setupModel() {
-        listModel.delegate = self
-        listModel.read()
+        listModel = ListModel()
+        listModel?.read { [weak self] error in
+            if let error = error {
+                print(error.localizedDescription)
+                self?.showAlertView(withTitle: "データの読み込みエラー", andMessage: "データを読み込めませんでした。")
+            } else {
+                self?.tableView.reloadData()
+            }
+        }
     }
 
     private func setupTableView() {
@@ -39,22 +53,25 @@ class ListViewController: UIViewController {
         tableView.delegate = self
     }
 
-    // MARK: - Segue
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToPost" {
-            guard let postVC = segue.destination as? PostViewController,
-                  let snap = listModel.selectedSnapshot else {
-                return
-            }
+    private func goToPost() {
+        let postVC = UIStoryboard(name: "PostViewController", bundle: nil).instantiateInitialViewController() as! PostViewController
 
-            let postModel = PostModel(with: Post(id: snap.documentID, content: snap["content"] as! String))
+        if let selectedSnap = listModel?.selectedSnapshot {
+            let postModel = PostModel(with: Post(id: selectedSnap.documentID, content: selectedSnap["content"] as! String))
 
             postVC.postModel = postModel
         }
+
+        let nav = UINavigationController(rootViewController: postVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true, completion: nil)
     }
 
-    private func goToPost() {
-        performSegue(withIdentifier: "goToPost", sender: self)
+    private func goToLogin() {
+        let loginVC = UIStoryboard(name: "LoginViewController", bundle: nil).instantiateInitialViewController() as! LoginViewController
+        let nav = UINavigationController(rootViewController: loginVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true, completion: nil)
     }
 
     // MARK: - Actions
@@ -63,45 +80,60 @@ class ListViewController: UIViewController {
     }
 
     @IBAction private func logoutButtonPressed() {
-        // TODO:
-    }
-}
-
-extension ListViewController: ListModelDelegate {
-    func listDidChnage() {
-        tableView.reloadData()
-    }
-
-    func errorDidOccur(error: Error) {
-        print(error.localizedDescription)
+        AuthModel.logout { [weak self] error in
+            if let error = error {
+                print(error.localizedDescription)
+                self?.showAlertView(withTitle: "ログアウトエラー", andMessage: "ログアウトできませんでした。")
+            }
+            self?.listModel = nil
+            self?.goToLogin()
+        }
     }
 }
 
 extension ListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return listModel.snapList.count
+        return listModel?.snapList.count ?? 0
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(forIndexPath: indexPath) as ListCell
 
-        let snap = listModel.snapList[indexPath.row]
-        let listData = List(snap: snap)
-        cell.configure(title: listData.content, date: listData.timestamp.dateValue())
+        if let snap = listModel?.snapList[indexPath.row] {
+            print("DEBUG: snap:: \(snap)")
+            let listData = List(snap: snap)
+            cell.configure(title: listData.content, date: listData.timestamp.dateValue())
+        }
         return cell
     }
 }
 
 extension ListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let listModel = listModel else { return }
         listModel.selectedSnapshot = listModel.snapList[indexPath.row]
         goToPost()
     }
 
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        guard let listModel = listModel else { return }
         if editingStyle == .delete {
-            listModel.delete(at: indexPath.row)
-            tableView.deleteRows(at: [indexPath], with: .fade)
+            listModel.delete(at: indexPath.row) { [weak self] error in
+                if let error = error {
+                    // snapshotListenerを用いているので、オフラインでも削除できるので基本的にエラーになることはない気がするのでこのエラーハンドリングは必要か？
+                    // <- オフラインからオンラインになったときにデータが同期される?
+                    print(error.localizedDescription)
+                    self?.showAlertView(withTitle: "データの削除エラー", andMessage: "データを削除できませんでした。")
+                } else {
+                    tableView.deleteRows(at: [indexPath], with: .fade)
+                }
+            }
         }
+    }
+}
+
+extension ListViewController: UIAdaptivePresentationControllerDelegate {
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        print("DEBUG: modal was dismissed")
     }
 }
