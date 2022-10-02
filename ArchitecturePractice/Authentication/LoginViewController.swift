@@ -7,6 +7,7 @@
 
 import UIKit
 
+// MVC architecture
 class LoginViewController: UIViewController {
     @IBOutlet private weak var emailTextField: UITextField!
     @IBOutlet private weak var passwordTextField: UITextField!
