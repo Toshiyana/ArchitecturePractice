@@ -18,7 +18,14 @@ struct List {
     }
 }
 
-class ListModel {
+protocol ListModelInput {
+    var snapList: [DocumentSnapshot] { get }
+    var selectedSnapshot: DocumentSnapshot? { get set }
+    func read(completion: @escaping(Error?) -> Void)
+    func delete(at index: Int, completion: @escaping(Error?) -> Void)
+}
+
+class ListModel: ListModelInput {
     private let db: Firestore = Firestore.firestore()
 
     var snapList: [DocumentSnapshot] = []

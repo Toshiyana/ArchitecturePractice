@@ -13,12 +13,20 @@ struct Post {
     var content: String
 }
 
-class PostModel {
+protocol PostModelInput {
+    var selectedPost: Post? { get }
+    func addNewPost(with content: String, completion: @escaping(Error?) -> Void)
+    func updatePost(with content: String, completion: @escaping(Error?) -> Void)
+}
+
+class PostModel: PostModelInput {
     private let db: Firestore
     let selectedPost: Post?
 
+    // 初期化時、selectedPost = nilになるのは新規で追加する時
     init(with selectedPost: Post? = nil) {
         self.selectedPost = selectedPost
+        // TODO: db初期化する意味ある？
         db = Firestore.firestore()
         db.settings.isPersistenceEnabled = true // オフラインの永続性を有効化（default）
     }
